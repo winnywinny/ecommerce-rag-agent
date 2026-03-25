@@ -56,13 +56,49 @@ if knowledge_file is not None and st.session_state.vectorstore is None:
         try:
             raw_text = knowledge_file.read().decode('utf-8')
             
-            # 1. 智能文档切块 (避免切断整句话)
+            # 1. 智能文档切块
             text_splitter = RecursiveCharacterTextSplitter(
                 chunk_size=200, 
-                chunk_overlap=30, # 上下文重叠，保留语义连贯性
+                chunk_overlap=30,
                 separators=["\n\n", "\n", "。", "！", "？", "，", ""]
             )
             chunks = text_splitter.split_text(raw_text)
+            
+            # 💡 数据清洗，过滤掉纯空行
+            chunks = [chunk for chunk in chunks if chunk.strip()]
+            
+            # 2. 调用 Embedding 模型将其转化为高维向量
+            embeddings = OpenAIEmbeddings(
+                openai_api_key=API_KEY, 
+                openai_api_base="https://dashscope.aliyuncs.com/compatible-mode/v1", 
+                model="text-embedding-v2",
+                chunk_size=10, 
+                check_embedding_ctx_length=False # 🌟 终极修复：关闭自动 Token 化，强制给阿里云发送纯文本
+            )
+            
+            # 3. 存入 FAISS 本地向量数据库
+            st.session_state.vectorstore = FAISS.from_texts(chunks, embeddings)
+            st.sidebar.success(f"✅ FAISS 知识库已挂载！(共 {len(chunks)} 个高维向量)")
+        except Exception as e:
+            st.sidebar.error(f"构建知识库失败，请检查配置。错误：{e}")
+            
+            # 💡 数据清洗，过滤掉纯空行
+            chunks = [chunk for chunk in chunks if chunk.strip()]
+            
+            # 2. 调用 Embedding 模型将其转化为高维向量
+            embeddings = OpenAIEmbeddings(
+                openai_api_key=API_KEY, 
+                openai_api_base="https://dashscope.aliyuncs.com/compatible-mode/v1", 
+                model="text-embedding-v2",
+                chunk_size=10, 
+                check_embedding_ctx_length=False # 🌟 终极修复：关闭自动 Token 化，强制给阿里云发送纯文本
+            )
+            
+            # 3. 存入 FAISS 本地向量数据库
+            st.session_state.vectorstore = FAISS.from_texts(chunks, embeddings)
+            st.sidebar.success(f"✅ FAISS 知识库已挂载！(共 {len(chunks)} 个高维向量)")
+        except Exception as e:
+            st.sidebar.error(f"构建知识库失败，请检查配置。错误：{e}")
             
             # 💡 新增：数据清洗，过滤掉切出来的纯空行脏数据
             chunks = [chunk for chunk in chunks if chunk.strip()]
