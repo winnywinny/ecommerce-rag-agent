@@ -67,8 +67,8 @@ if knowledge_file is not None and st.session_state.vectorstore is None:
             # 2. 调用 Embedding 模型将其转化为高维向量
             embeddings = OpenAIEmbeddings(
                 openai_api_key=API_KEY, 
-                openai_api_base=BASE_URL,
-                model="text-embedding-v1" # 阿里云兼容的通用向量模型
+                openai_api_base="https://dashscope.aliyuncs.com/compatible-mode/v1", # 换成阿里云通用网关
+                model="text-embedding-v2" # 使用最新的 v2 向量模型
             )
             
             # 3. 存入 FAISS 本地向量数据库
